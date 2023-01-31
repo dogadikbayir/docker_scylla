@@ -1,0 +1,71 @@
+Author: Tutku Alpsar
+Date: 01/29/2023
+
+
+SUMMARY FOR ANY ZOOMER WITH THE ATTENTION SPAN OF AN ANT:
+    
+    The below instructions assume you compile scylla successfully, using Apache Maven.
+    From the same directory you opened this README doc:
+
+    run `sudo docker build -t api_tool .`
+    run `sudo docker run -p 8000:8000 -d api_tool`
+    run `sudo docker ps`, use either container_name or container_id to use commands with a specific container from now on
+    
+    Go to you browser and send a couple GET requests such as:
+        write `localhost:8000/storeddata/data1`, the output should match <OUTPUT1> of this doc (json output)
+        write `localhost:8000/storeddata/data2`, the same just with different data this time.
+        
+        You can send more requests like above.
+
+    run `sudo docker logs <container_id OR container_name>`: if output is something like <OUTPUT2> in this doc, you're done. if not check:
+                                                                                                                                    - if you compiled scylla before running the above steps
+                                                                                                                                    - if you have a firewall etc., blocking port 8000
+                                                                                                                                    - your Docker installation
+                                                                                                                                    - the container logs, you should be able to see Python and Java error messages there
+
+DETAILED EXPLANATION:
+
+This file briefly explains the steps required to start the Flask listener in a Docker container.
+
+First, we need to build the Docker image using the Dockerfile. From this directory, in the terminal, 
+                    
+                    call 'sudo docker build -t api_tool .'
+
+This will get Linux, Java, python and all the dependencies and set up the Docker image for later use (check Dockerfile for exact versions etc.)
+
+After the Docker image is created, use
+                        'sudo docker run -p 8000:8000 -d api_tool'
+
+This runs the created image and exposes port 8000 for the Flask listener.
+You can use 'sudo docker ps' to see it's tag and 'sudo docker logs <container-tag>' to check what it prints.
+
+Once you run the container, you can check localhost:8000/storeddata/data1 from your browser, the output on the page should be:
+
+<OUTPUT1>
+{
+    "key1": "value2"
+}
+<OUTPUT1>
+
+For some reason, scylla is starts being invoked after the very first GET request we send to Flask, the first GET request won't invoke scylla...
+
+Send a couple of requests like localhost:8000/storeddata/data2 , localhost:8000/storeddata/data3, etc.
+
+This confirms that the Flask listener is working, now if you check 'sudo docker logs <container-tag>', the output should be something like this:
+
+<OUTPUT2>
+    172.17.0.1 - - [29/Jan/2023 16:00:40] "GET /storeddata/data3 HTTP/1.1" 200 -
+    Scylla execution output:
+    b'[Namespace: prefix "bsim" is mapped to URI "http://bsim.hpi.uni-potsdam.de/scylla/simModel"]\n[DEBUG] Random seed for whole simulation (if not overriden by simulation configuration): -1527794789113628074\n[DEBUG] Element exclusiveGateway of simulation scenario not supported.\n[DEBUG] Element exclusiveGateway of simulation scenario not supported.\n***** DESMO-J version 2.5.1c ***** \n1675008040722 starts at simulation time 0.\n ...please wait...\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n[DEBUG] No distribution found for node 7: SendTask_05lxxlm. \nUse zero time interval.\n1675008040722 stopped at simulation time 1491024.\n/app/scylla/samples/output_23_01_29_16_00_40_862/\nWrote batch activity statistics to /app/scylla/samples/output_23_01_29_16_00_40_862/Kreditkarte_global_1_batchactivitystats.txt\nstart serializing log to XES.XML\nfinished serializing log (28 msec.)\n'
+    
+    None
+    This is a GET request. Instead of printing we could do sth else
+    Scylla created the following output folders so far:
+    ['output_23_01_29_16_00_40_862']
+<OUTPUT2>
+
+Each time the Flask listener gets a GET request, a new folder will appear in the logs. Each time the docker container is stopped, the output folders will be lost, if you want to store them, consider adding a volume mechanism to the Dockerfile.
+
+
+
+    
